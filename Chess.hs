@@ -1,4 +1,4 @@
-module Chess (Color(..),Piece(..),Chess(..)) where
+module Chess (Color(..),Kind(..),Piece(..)) where
 
 import Data.List
 
@@ -6,10 +6,18 @@ data Color = Black | White
     deriving (Eq, Ord, Bounded, Enum)
 color_chars = "BW"
 
-data Piece = King | Queen | Rock | Bishop | Knight | Pawn
+data Kind = King | Queen | Rock | Bishop | Knight | Pawn
     deriving (Eq, Ord, Bounded, Enum)
-piece_chars = "KQRBKP"
+kind_chars = "KQRBKP"
 
-data Chess = Chess Color Piece
+data Piece = Piece Color Kind
     deriving (Eq, Bounded)
 
+instance Show Color where
+    show r = [color_chars !! fromEnum r]
+
+instance Show Kind where
+    show r = [kind_chars !! fromEnum r]
+
+instance Show Piece where
+    show (Piece c k) = show c ++ show k
