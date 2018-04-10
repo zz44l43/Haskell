@@ -19,7 +19,18 @@ initialGuess  x
   | x == 3 = (["BK", "BR", "WQ"], GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] [] [])
   | x == 4 = (["BK", "BR", "WQ", "WK"], GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] [] [])
   | x == 5 = (["BK", "BR", "BQ", "WQ", "WK"], GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] [] [])
-  
+
+
+removeColorFromState :: [String] -> GameState -> GameState
+removeColorFromState (x:xs) g
+    | isBlack x == True = removeAllBlack [] g
+    | otherwise = removeAllWhite [] g
+
+isBlack :: String -> Bool
+isBlack x
+    | head x == 'B' = True
+    | otherwise = False
+
 removeAllBlack :: [String] -> GameState -> GameState
 removeAllBlack s g = GameState (filter startsWithW (getGameStatePieces g) ++ s) (getGameStatePrvGuess g) (getGameStatePrvResult g)
 
@@ -85,3 +96,11 @@ getGameStatePrvGuess (GameState _ g _) = g
 
 getGameStatePrvResult :: GameState -> [[Int]]
 getGameStatePrvResult (GameState _ _ r) = r
+
+updateGameState :: ([String], GameState) -> (Int,Int,Int) -> GameState
+updateGameState (p, g) (x1, x2, x3)
+    | x1 == 0 && x2 == 0 && x3 == 0 = removePieceFromState p (removeKindFromState p (removeColorFromState p g))
+    | x1 == 0 && x2 == 0 = removePieceFromState p (removeKindFromState p g)
+    | x1 == 0 && x == 0 = removePieceFromState p (removeKindFromState p g)
+    | otherwise = g
+
