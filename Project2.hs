@@ -150,6 +150,12 @@ getGameStatePrvResult (GameState _ _ _ r _ _) = r
 getGameAnswerResult :: GameState -> [String]
 getGameAnswerResult (GameState _ _ _ _ a _) = a
 
+getGameAnswerBlackResult :: GameState -> [String]
+getGameAnswerBlackResult g = filter startsWithB (getGameAnswerResult g)
+
+getGameAnswerWhiteResult :: GameState -> [String]
+getGameAnswerBlackResult g = filter startsWithW (getGameAnswerResult g)
+
 getGameSize :: GameState -> Int
 getGameSize (GameState _ _ _ _ _ s) = s
 
@@ -166,17 +172,38 @@ updateGameState (p, g) (x1, x2, x3)
 updateAndMakeGuessAfterFirstRound :: ([String],GameState) -> (Int,Int,Int) -> ([String],GameState)
 updateAndMakeGuessAfterFirstRound (p, g) (x1, x2, x3)
     | x1 > 0  && x2 > 0 = ((generateInitialGuessForWhite (getGameSize rightPieceAndRightKindState)), rightPieceAndRightKindState)
-    | x1 > 0 = ((generateInitialGuessForWhite (getGameSize rightPieceState)), rightPieceState)
+    | x1 > 0  && x2 == 0 = ((generateInitialGuessForWhite (getGameSize rightPieceAndNoMoreKindState)), rightPieceAndNoMoreKindState)
     | x2 == 0 = ((generateInitialGuessForWhite (getGameSize removeKindState)),removeKindState)
     | otherwise = (p, g)
   where
     updatedBlackState = updateColorRatioBasedOnBlack (getGameSize g) (x1, x2, x3) g
     rightPieceState = addAnswerToState (head p) x1 updatedBlackState
     rightPieceAndRightKindState = addAnswerToState (reverseColor (head p)) x2 rightPieceState
+    rightPieceAndNoMoreKindState = removePieceFromState [(reverseColor (head p))] rightPieceState
     removeKindState = removeKindFromState p updatedBlackState
+
+updateAndMakeGuessAfterSecondRound :: ([String],GameState) -> (Int,Int,Int) -> ([String],GameState)
+updateAndMakeGuessAfterSecondRound (p, g) (x1, x2, x3)
+    | x1 > 0  && x2 > 0 = ((generateInitialGuessForWhite (getGameSize rightPieceAndRightKindState)), rightPieceAndRightKindState)
+    | x1 > 0  && x2 == 0 = ((generateInitialGuessForWhite (getGameSize rightPieceAndNoMoreKindState)), rightPieceAndNoMoreKindState)
+    | x2 == 0 = ((generateInitialGuessForWhite (getGameSize removeKindState)),removeKindState)
+    | otherwise = (p, g)
+  where
+    updatedBlackState = updateColorRatioBasedOnBlack (getGameSize g) (x1, x2, x3) g
+    rightPieceState = addAnswerToState (head p) x1 updatedBlackState
+    rightPieceAndRightKindState = addAnswerToState (reverseColor (head p)) x2 rightPieceState
+    rightPieceAndNoMoreKindState = removePieceFromState [(reverseColor (head p))] rightPieceState
+    removeKindState = removeKindFromState p updatedBlackState
+
+generateGuessForBlack :: Int -> GameState -> [String]
+generateGuessForBlack i g
+    | i = 
 
 nextGuess :: ([String],GameState) -> (Int,Int,Int) -> ([String],GameState)
 nextGuess (p, g) (x1, x2, x3)
-    | getGameRound updatedState == 1 = (["BK"], updateColorRatioBasedOnBlack (getGameSize g) (x1, x2, x3) updatedState)
+    | getGameRound updatedState == 1 = updateAndMakeGuessAfterFirstRound (p, stateAfterFirstRound) (x1,x2,x3)
+    | getGameRound updatedState == 2 = updateAndMakeGuessAfterSecondRound (p, stateAfterSecondRound) (x1,x2,x3)
   where
     updatedState = updateGameRound p (x1, x2, x3) g
+    stateAfterFirstRound = updateColorRatioBasedOnBlack (getGameSize updatedState) (x1, x2, x3) updatedState
+    stateAfterSecondRound = updateColorRatioBasedOnWhite (getGameSize updatedState) (x1, x2, x3) updatedState
