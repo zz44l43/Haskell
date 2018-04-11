@@ -66,8 +66,14 @@ removeKind x (y:ys)
 sameKind :: String -> String -> Bool
 sameKind b w = tail b == (tail w)
 
+getNumberOfKindForAColor :: String -> GameState -> Int
+getNumberOfKindForAColor k g
+    | head k == 'B' = length (filter (==k) (getGameStateBlackPieces g))
+    | otherwise = length (filter (==k) (getGameStateWhitePieces g))
+ 
+
 getDifferentKind :: String -> [String] -> String
-getDifferentKind e [] = error "Oops!"
+getDifferentKind e [] = error "Oops! Different kind wrong"
 getDifferentKind e (s:ss)
     |sameKind e s == True = getDifferentKind e ss
     |otherwise = s
@@ -101,18 +107,16 @@ startsWithWAndException xs es
     | checkEleInTheList xs es == True = True
     | otherwise = False
 
+
+
 checkEleInTheList :: (Eq a) => a -> [a] -> Bool
 checkEleInTheList x = any (== x)
 
 updateColorRatioBasedOnBlack :: Int -> (Int,Int,Int) -> GameState  -> GameState
-updateColorRatioBasedOnBlack x (f1,f2,f3) g
-    | getGameStateColorRatio g  == (0,0) = GameState (getGameStatePieces g) ((f1+f3), (getGameStateColorWhiteRatio g)) (getGameStatePrvGuess g) (getGameStatePrvResult g) (getGameAnswerResult g) (getGameSize g)
-    | otherwise = g
+updateColorRatioBasedOnBlack x (f1,f2,f3) g = GameState (getGameStatePieces g) ((f1+f3), (getGameStateColorWhiteRatio g)) (getGameStatePrvGuess g) (getGameStatePrvResult g) (getGameAnswerResult g) (getGameSize g)
 
 updateColorRatioBasedOnWhite :: Int -> (Int,Int,Int) -> GameState  -> GameState
-updateColorRatioBasedOnWhite x (f1,f2,f3) g
-    | getGameStateColorRatio g  == (0,0) = GameState (getGameStatePieces g) ((getGameStateColorBlackRatio g), (f1+f3)) (getGameStatePrvGuess g) (getGameStatePrvResult g) (getGameAnswerResult g) (getGameSize g)
-    | otherwise = g
+updateColorRatioBasedOnWhite x (f1,f2,f3) g = GameState (getGameStatePieces g) ((getGameStateColorBlackRatio g), (f1+f3)) (getGameStatePrvGuess g) (getGameStatePrvResult g) (getGameAnswerResult g) (getGameSize g)
 
 addPreviousGuess :: [String] -> GameState -> GameState
 addPreviousGuess s g = GameState (getGameStatePieces g) (getGameStateColorRatio g) (insert s (getGameStatePrvGuess g)) (getGameStatePrvResult g) (getGameAnswerResult g) (getGameSize g)
@@ -150,6 +154,9 @@ getGameStateWhitePieces g = filter startsWithW (getGameStatePieces g)
 getGameStateColorRatio :: GameState -> (Int, Int)
 getGameStateColorRatio (GameState _ r _ _ _ _) = r
 
+getTotalPieces :: GameState -> Int
+getTotalPieces g = (getGameStateColorBlackRatio g) + (getGameStateColorWhiteRatio g)
+
 getGameStateColorBlackRatio :: GameState -> Int
 getGameStateColorBlackRatio (GameState _ (b,w) _ _ _ _) = b
 
@@ -176,6 +183,9 @@ getGameSize (GameState _ _ _ _ _ s) = s
 
 getGameStateWithGuess :: ([String],GameState) -> GameState
 getGameStateWithGuess (s,g) = g
+
+getGuess :: ([String],GameState) -> [String]
+getGuess (s,g) = s
 
 updateGameState :: ([String], GameState) -> (Int,Int,Int) -> GameState
 updateGameState (p, g) (x1, x2, x3)
@@ -224,10 +234,33 @@ updateAndMakeGuessAfterSecondRound (p, g) (x1, x2, x3)
     removeKindState = removeKindFromState p updatedWhiteState
     noWhite = removeAllWhite [] updatedWhiteState
 
+updateAndMakeGuessAfterThirdRound :: ([String],GameState) -> (Int,Int,Int) -> ([String],GameState)
+updateAndMakeGuessAfterThirdRound (p, g) (x1, x2, x3)
+    | newFeedbackForCorrectPieces > 0  && x2 > 0 = ((generateGuess rightPieceAndRightKindState), rightPieceAndRightKindState)
+    | newFeedbackForCorrectPieces > 0  && x2 == 0 = ((generateGuess  rightPieceAndNoMoreKindState), rightPieceAndNoMoreKindState)
+    | x2 == 0 = ((generateGuess wrongPieceAndNoMoreKindState),wrongPieceAndNoMoreKindState)
+    | x2 > 0 = ((generateGuess wrongPieceAndRightKindState),wrongPieceAndRightKindState)
+    | otherwise = error "Oops"
+  where
+    newPieces = p \\ (getGameAnswerResult g)
+    newFeedbackForCorrectPieces = x1 - length (getGameAnswerResult g)
+    rightPieces = replicate newFeedbackForCorrectPieces (head newPieces)
+    multipleRightPieces = replicate (getNumberOfKindForAColor (head newPieces) g) (head newPieces)
+    rightPieceState = removePieceFromState multipleRightPieces (addAnswerToState (head newPieces) newFeedbackForCorrectPieces g)
+    rightPieceAndRightKindState = addAnswerToState (reverseColor (head newPieces)) x2 rightPieceState
+    rightPieceAndNoMoreKindState = removePieceFromState reverseColorKinds rightPieceState
+    reverseColorPiece = reverseColor (head newPieces)
+    reverseColorKinds = replicate (getNumberOfKindForAColor reverseColorPiece rightPieceState) reverseColorPiece
+    wrongPiece = head newPieces
+    multipleWrongPieces = replicate (getNumberOfKindForAColor wrongPiece g) wrongPiece
+    wrongPieceState = removePieceFromState multipleWrongPieces g
+    wrongPieceAndRightKindState = addAnswerToState (reverseColor wrongPiece) x2 wrongPieceState
+    wrongPieceAndNoMoreKindState = removePieceFromState [(reverseColor wrongPiece)] wrongPieceState
+
 generateGuess :: GameState -> [String]
 generateGuess g
-    | needBlack == True = blackGuess
-    | otherwise = generateGuessForWhiteOnly g
+    | needBlack == True = blackGuess ++ (getGameAnswerResult g)
+    | otherwise = generateGuessForWhiteOnly g ++ (getGameAnswerResult g)
   where
     blackGuess = generateGuessForBlackOnly g
     needBlack = (getGameStateColorBlackRatio g) - (length (getGameAnswerBlackResult g)) > 0
@@ -235,7 +268,7 @@ generateGuess g
 generateGuessForBlackOnly :: GameState -> [String]
 generateGuessForBlackOnly g = replicate remindingGuess (head (getGameStateBlackPieces g))
   where
-    totalPieces = length (getGameStateColorRatio g)
+    totalPieces = getTotalPieces g
     correctPieces = length (getGameAnswerResult g)
     remindingGuess = totalPieces - correctPieces
 
@@ -243,7 +276,7 @@ generateGuessForBlackOnly g = replicate remindingGuess (head (getGameStateBlackP
 generateGuessForWhiteOnly :: GameState -> [String]
 generateGuessForWhiteOnly g = replicate remindingGuess (head (getGameStateWhitePieces g))
   where
-    totalPieces = length (getGameStateColorRatio g)
+    totalPieces = getTotalPieces g
     correctPieces = length (getGameAnswerResult g)
     remindingGuess = totalPieces - correctPieces
 
@@ -267,7 +300,8 @@ generateGuessForWhiteWithException g e
     
 nextGuess :: ([String],GameState) -> (Int,Int,Int) -> ([String],GameState)
 nextGuess (p, g) (x1, x2, x3)
-    | getGameRound updatedState == 1 = updateAndMakeGuessAfterFirstRound (p, g) (x1,x2,x3)
-    | getGameRound updatedState == 2 = updateAndMakeGuessAfterSecondRound (p, g) (x1,x2,x3)
+    | getGameRound updatedState == 1 = updateAndMakeGuessAfterFirstRound (p, updatedState) (x1,x2,x3)
+    | getGameRound updatedState == 2 = updateAndMakeGuessAfterSecondRound (p, updatedState) (x1,x2,x3)
+    | otherwise = updateAndMakeGuessAfterThirdRound(p,updatedState) (x1,x2,x3)
   where
     updatedState = updateGameRound p (x1, x2, x3) g
