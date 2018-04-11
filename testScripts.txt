@@ -1,0 +1,5 @@
+let d = GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] (0,0) [] [] [] 3
+let f = ["BK","BK","BK"]
+let p =  updateAndMakeGuessAfterFirstRound (f,d) (1,0,2)
+let pp = getGameStateWithGuess p
+getGameAnswerResult pp
