@@ -142,9 +142,9 @@ updateAndMakeGuessAfterThirdRound (p, g) (x1, x2, x3)
     wrongPieceState = removePieceFromState multipleWrongPieces g
     wrongPieceAndRightKindState = addAnswerToState (reverseColor wrongPiece) x2 wrongPieceState
     wrongPieceAndNoMoreKindState = removePieceFromState [(reverseColor wrongPiece)] wrongPieceState
-
--- |generate guess for each round which composite of new guess value along with the known correct values
-
+{-|
+Generate guess for each round which composite of new guess value along with the known correct values
+-}
 generateGuess :: GameState -> [String]
 generateGuess g
     | needBlack == True = blackGuess ++ (getGameAnswerResult g)
