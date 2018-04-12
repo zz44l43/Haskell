@@ -1,5 +1,4 @@
-module Proj2 (initialGuess, GameState) where
-import Piece
+module Project2 (initialGuess, nextGuess, GameState) where
 import Data.List
 
 data GameState = GameState {pieces :: [String], colorRatio :: (Int, Int), previousGuess :: [[String]], previousResults :: [(Int,Int,Int)], answers :: [String], size :: Int} deriving (Eq)
@@ -15,10 +14,7 @@ allWrongColor _ 0 = True
 allWrongColor _ _ = False
 
 initialGuess :: Int -> ([String],GameState)
-initialGuess  x
-  | x == 3 = (["BK", "BK", "BK"], GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] (0,0) [] [] [] x)
-  | x == 4 = (["BK", "BR", "WQ", "WK"], GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] (0,0) [] [] [] x)
-  | x == 5 = (["BK", "BR", "BQ", "WQ", "WK"], GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] (0,0) [] [] [] x)
+initialGuess  x = ((replicate x "BK"), GameState ["BK","BQ","BR","BR","BB","BB","BN","BN","BP","BP","BP","BP","BP","BP","BP","BP","WK","WQ","WR","WR","WB","WB","WN","WN","WP","WP","WP","WP","WP","WP","WP","WP"] (0,0) [] [] [] x)
 
 generateInitialGuessForBlack :: Int -> [String]
 generateInitialGuessForBlack 0 = []
@@ -70,7 +66,7 @@ getNumberOfKindForAColor :: String -> GameState -> Int
 getNumberOfKindForAColor k g
     | head k == 'B' = length (filter (==k) (getGameStateBlackPieces g))
     | otherwise = length (filter (==k) (getGameStateWhitePieces g))
- 
+
 
 getDifferentKind :: String -> [String] -> String
 getDifferentKind e [] = error "Oops! Different kind wrong"
@@ -207,7 +203,7 @@ updateAndMakeGuessAfterFirstRound (p, g) (x1, x2, x3)
     rightPieceState = removePieceFromState rightPieces (addAnswerToState (head p) x1 updatedBlackState)
     rightPieceAndRightKindState = addAnswerToState (reverseColor (head p)) x2 rightPieceState
     rightPieceAndNoMoreKindState = removePieceFromState [(reverseColor (head p))] rightPieceState
-    wrongPiece = replicate x1 (head p)
+    wrongPiece = [(head p)]
     wrongPieceState = removePieceFromState wrongPiece updatedBlackState
     wrongPieceAndRightKindState = addAnswerToState (reverseColor (head p)) x2 wrongPieceState
     wrongPieceAndNoMoreKindState = removePieceFromState [(reverseColor (head p))] wrongPieceState
@@ -227,7 +223,7 @@ updateAndMakeGuessAfterSecondRound (p, g) (x1, x2, x3)
     rightPieceState = removePieceFromState rightPieces (addAnswerToState (head p) x1 updatedWhiteState)
     rightPieceAndRightKindState = addAnswerToState (reverseColor (head p)) x2 rightPieceState
     rightPieceAndNoMoreKindState = removePieceFromState [(reverseColor (head p))] rightPieceState
-    wrongPiece = replicate x1 (head p)
+    wrongPiece = [(head p)]
     wrongPieceState = removePieceFromState wrongPiece updatedWhiteState
     wrongPieceAndRightKindState = addAnswerToState (reverseColor (head p)) x2 wrongPieceState
     wrongPieceAndNoMoreKindState = removePieceFromState [(reverseColor (head p))] wrongPieceState
@@ -297,7 +293,7 @@ generateGuessForWhiteWithException g e
   where
     howManyIsNeeded = (getGameStateColorWhiteRatio g) - (length ((getGameAnswerWhiteResult g)))
     needMoreGuess = (getGameStateColorWhiteRatio g) - (length (getGameAnswerWhiteResult g)) > 0
-    
+
 nextGuess :: ([String],GameState) -> (Int,Int,Int) -> ([String],GameState)
 nextGuess (p, g) (x1, x2, x3)
     | getGameRound updatedState == 1 = updateAndMakeGuessAfterFirstRound (p, updatedState) (x1,x2,x3)
